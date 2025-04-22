@@ -1,0 +1,13 @@
+version: '3.7'
+
+services:
+  fusion-hbar-service-backend:
+    image: ${DOCKER_PREFIX:-ibn40}/fusion-hbar-service-backend:${DOCKER_TAG:-latest}
+    build:
+      context: ./backend
+    ports:
+    - "4007:4007"
+    env_file:
+      - .env
+    environment:
+      - ENV=dev
