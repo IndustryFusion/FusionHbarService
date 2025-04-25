@@ -41,5 +41,5 @@ fetch_secrets() {
 
 #fetch_secrets "apps/data/$ENV_TYPE/$APP_NAME/frontend" "frontend/.$ENV_FILE"
 fetch_secrets "apps/data/$ENV_TYPE/$APP_NAME/backend" ".$ENV_FILE"
-
+cat ".$ENV_FILE"
 echo "Secrets fetched and stored successfully."
