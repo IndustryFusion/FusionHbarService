@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { Client, Hbar, PrivateKey, TopicCreateTransaction, TopicInfoQuery, TopicMessageSubmitTransaction } from '@hashgraph/sdk';
 import { generateVcDocument } from './vc.template';
 
@@ -26,71 +26,101 @@ export class VcService {
 
     constructor(@Inject('HEDERA_CLIENT') private readonly client: Client) { }
 
-    async createNewTopic(client) {
-        const transaction = new TopicCreateTransaction()
-            .setTopicMemo(this.topicId) // Optional memo
-            .setAdminKey(client.operatorPublicKey) // Optional admin key
-            .setAutoRenewAccountId(client.operatorAccountId); // Auto-renew settings
-
-        const response = await transaction.execute(client);
-        const receipt = await response.getReceipt(client);
-        if (!receipt.topicId) {
-            throw new Error("Failed to create topic: topicId is undefined");
-        }
-        console.log("New Topic ID:", receipt?.topicId.toString());
-        return receipt.topicId.toString();
-    }
-
-    async ensureTopicExists(topicId) {
+    async createNewTopic(region: string): Promise<Record<string, any>> {
         try {
-            const query = new TopicInfoQuery().setTopicId(topicId);
-            const info = await query.execute(this.client);
-            console.log("Topic exists:", info);
-            return topicId; // Return existing topic ID
-        } catch (error) {
-            if (error.status && error.status.toString() === "INVALID_TOPIC_ID") {
-                console.log("Topic does not exist, creating a new one...");
-                return this.createNewTopic(this.client);
+            const memo = `VCs for ${region.toUpperCase()} products`;
+
+            const transaction = new TopicCreateTransaction()
+                .setTopicMemo(memo)
+                .setMaxTransactionFee(new Hbar(0));
+
+            const txResponse = await transaction.execute(this.client);
+            const receipt = await txResponse.getReceipt(this.client);
+            const topicId = receipt.topicId?.toString();
+
+            if (!topicId) {
+                throw new HttpException('Failed to retrieve topic ID from receipt', HttpStatus.BAD_REQUEST);
             }
-            throw error; // Handle other errors
+
+            return {
+                status: 201,
+                message: `New topic created for ${region.toUpperCase()} region`,
+                region,
+                topicId,
+                memo,
+            };
+        } catch (error) {
+            console.error(`❌ Failed to create topic for region ${region}:`, error);
+            throw new HttpException(
+                `Failed to create HCS topic: ${error.message || 'Unknown error'}`,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
         }
     }
 
-    async issueVc(holderDid: string, twinUrn: string) {
-        const issuanceDate = new Date().toISOString();
+    // async ensureTopicExists(topicId) {
+    //     try {
+    //         const query = new TopicInfoQuery().setTopicId(topicId);
+    //         const info = await query.execute(this.client);
+    //         console.log("Topic exists:", info);
+    //         return topicId; // Return existing topic ID
+    //     } catch (error) {
+    //         if (error.status && error.status.toString() === "INVALID_TOPIC_ID") {
+    //             console.log("Topic does not exist, creating a new one...");
+    //             return this.createNewTopic(this.client);
+    //         }
+    //         throw error; // Handle other errors
+    //     }
+    // }
 
-        const vcPayload = generateVcDocument(holderDid, twinUrn);
-        const vcWithProof = {
-            ...vcPayload,
-            proof: {
-                type: 'Ed25519Signature2020',
-                created: issuanceDate,
-                proofPurpose: 'assertionMethod',
-                verificationMethod: `${this.issuerDid}#keys-1`
-            },
-        };
+    async issueVc(holderDid: string, twinUrn: string, location: string = 'Global', status: string = 'Pending', privateKey: string, subAccountId: string): Promise<Record<string, any>> {
+        try {
+            const issuanceDate = new Date().toISOString();
 
-        const message = Buffer.from(JSON.stringify(vcWithProof));
-        const topicCheck = await this.ensureTopicExists(this.topicId);
-        if (!topicCheck) {
-            throw new Error("Failed to ensure topic exists");
+            const vcPayload = generateVcDocument(holderDid, twinUrn, location, status, subAccountId);
+            const vcWithProof = {
+                ...vcPayload,
+                proof: {
+                    type: 'Ed25519Signature2020',
+                    created: issuanceDate,
+                    proofPurpose: 'assertionMethod',
+                    verificationMethod: `${this.issuerDid}#keys-1`
+                }
+            };
+
+            const message = Buffer.from(JSON.stringify(vcWithProof));
+            const submitTx = new TopicMessageSubmitTransaction()
+                .setTopicId(this.topicId)
+                .setMessage(message)
+                .setMaxTransactionFee(new Hbar(0.1));
+
+            const freezeTransaction = (await submitTx).freezeWith(this.client);
+            const signedTransaction = freezeTransaction.sign(PrivateKey.fromStringECDSA(privateKey));
+            const response = (await signedTransaction).execute(this.client);
+            const receipt = await (await response).getReceipt(this.client);
+            const sequenceNumber = receipt?.topicSequenceNumber?.toString();
+            if (!sequenceNumber) {
+                throw new HttpException(
+                    'VC issued but topic sequence number is missing',
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
+
+            return {
+                status: 201,
+                message: 'Verifiable Credential issued successfully',
+                twinUrn: twinUrn,
+                vcId: vcPayload.vcId,
+                topicId: this.topicId,
+                sequenceNumber,
+                vc: vcWithProof
+            };
+        } catch (error) {
+            console.error('❌ Failed to issue VC:', error);
+            throw new HttpException(
+                `Failed to issue VC: ${error.message || 'Unknown error'}`,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
         }
-        const submitTx = new TopicMessageSubmitTransaction()
-            .setTopicId(this.topicId)
-            .setMessage(message)
-            .setMaxTransactionFee(new Hbar(2));
-
-        const freezeTransaction = (await submitTx).freezeWith(this.client);
-        const signedTransaction = freezeTransaction.sign(PrivateKey.fromStringECDSA(this.privateKey));
-        const response = (await signedTransaction).execute(this.client);
-        const receipt = await (await response).getReceipt(this.client);
-        const sequenceNumber = receipt?.topicSequenceNumber?.toString();
-
-        return {
-            vcId: twinUrn,
-            topicId: this.topicId,
-            sequenceNumber,
-            vc: vcWithProof,
-        };
     }
 }

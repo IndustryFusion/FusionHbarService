@@ -14,20 +14,28 @@
 * limitations under the License.
 */
 
-export function generateVcDocument(holderDid: string, twinUrn: string) {
-  const vcId = twinUrn; // Or use your own namespace/format
+export function generateVcDocument(holderDid: string, twinUrn: string, location: string, status: string, subAccountId: string): Record<string, any> {
+  const vcId = twinUrn.split(":")[2]; // Or use your own namespace/format
 
   const issuanceDate = new Date().toISOString();
 
   return {
-    '@context': ['https://www.w3.org/2018/credentials/v1'],
-    id: vcId,
-    type: ['VerifiableCredential'],
-    issuer: 'did:hedera:issuer', // replace with your platform DID
-    issuanceDate,
-    credentialSubject: {
-      owner: holderDid,
-      id: twinUrn,
-    },
+    vcId: "urn:vc:product:" + vcId,
+    productUrn: twinUrn,
+    timestamp: issuanceDate,
+    vc: {
+      '@context': ['https://www.w3.org/2018/credentials/v1'],
+      id: "urn:vc:product:" + vcId,
+      type: ['VerifiableCredential'],
+      issuer: 'did:hedera:0.0.999', // replace with your platform DID
+      issuanceDate,
+      credentialSubject: {
+          id: twinUrn,
+          status: status,
+          location: location,
+          owner: holderDid,
+          ownerHederaAccountId: subAccountId, // Assuming holderDid is the Hedera account ID
+      }
+    }
   };
 }
