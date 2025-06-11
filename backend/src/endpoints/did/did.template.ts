@@ -16,10 +16,12 @@
 
 import { PublicKey } from "@hashgraph/sdk";
 
-export function generateDidDocument(did: string, publicKey: PublicKey) {
+export function generateDidDocument(did: string, publicKey: PublicKey, subAccountId: string): Record<string, any> {
   return {
     '@context': 'https://www.w3.org/ns/did/v1',
     id: did,
+    created: new Date().toISOString(),
+    ownerHederaAccountId: subAccountId,
     verificationMethod: [
       {
         id: `${did}#keys-1`,
@@ -29,5 +31,6 @@ export function generateDidDocument(did: string, publicKey: PublicKey) {
       },
     ],
     authentication: [`${did}#keys-1`],
+    assertionMethod: [`${did}#keys-1`]
   };
 }

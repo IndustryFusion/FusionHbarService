@@ -15,33 +15,43 @@
 */
 
 import { Client, FileCreateTransaction, Hbar, PublicKey } from '@hashgraph/sdk';
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { generateDidDocument } from './did.template';
 
 @Injectable()
 export class DidService {
-    constructor(@Inject('HEDERA_CLIENT') private readonly client: Client) {}
-    
-    async createDid(urn: string, publicKey: PublicKey) {
+    constructor(@Inject('HEDERA_CLIENT') private readonly client: Client) { }
 
-        const did = urn;
-        const didDocument = generateDidDocument(did, publicKey);
-        const didDocumentJson = Buffer.from(JSON.stringify(didDocument));
+    async createDid(urn: string, publicKey: PublicKey, subAccountId: string): Promise<Record<string, any>> {
+        try {
+            const did = urn;
+            const didDocument = generateDidDocument(did, publicKey, subAccountId); // Assuming URN format is urn:did:hedera:<subAccountId
+            const didDocumentJson = Buffer.from(JSON.stringify(didDocument));
 
-        const createTx = new FileCreateTransaction()
-            .setKeys([this.client.operatorPublicKey!])
-            .setContents(didDocumentJson)
-            .setMaxTransactionFee(new Hbar(2))
-        
-        const response = await createTx.execute(this.client);
-        const receipt = await response.getReceipt(this.client);
-        const fileId = receipt.fileId?.toString();
-        console.log(`✅ DID created for URN ${urn}: ${did}`);
+            const createTx = new FileCreateTransaction()
+                .setKeys([this.client.operatorPublicKey!])
+                .setContents(didDocumentJson)
+                .setMaxTransactionFee(new Hbar(0.5))
 
-        return {
-            urn,
-            did,
-            fileId,
-        };
+            const response = await createTx.execute(this.client);
+            const receipt = await response.getReceipt(this.client);
+            const fileId = receipt.fileId?.toString();
+            if (!fileId) {
+                throw new HttpException('Failed to retrieve fileId from receipt', HttpStatus.BAD_GATEWAY);
+            }
+            console.log(`✅ DID created for URN ${urn}: ${did}`);
+
+            return {
+                status: 201,
+                did,
+                fileId,
+            };
+        } catch (error) {
+            console.error('❌ Failed to create DID document:', error);
+            throw new HttpException(
+                'Failed to create DID document: ' + error.message,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
     }
 }

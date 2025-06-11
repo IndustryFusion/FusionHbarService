@@ -14,38 +14,52 @@
 * limitations under the License.
 */
 
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { Client, AccountCreateTransaction, PublicKey, Hbar, FileId } from '@hashgraph/sdk';
 import { DidService } from '../did/did.service';
 import { generateHederaPrivateKey } from '../certificates/certificate.service';
 
 @Injectable()
 export class AccountService {
-    constructor(@Inject('HEDERA_CLIENT') private readonly client: Client, private readonly didService: DidService) {} // Injected Hedera client
-    
+    constructor(@Inject('HEDERA_CLIENT') private readonly client: Client, private readonly didService: DidService) { } // Injected Hedera client
+
     async createSubAccount(urn: string) {
-        const keyPair = generateHederaPrivateKey()
-        const publicKey = PublicKey.fromString(keyPair.publicKey);
+        try {
+            const keyPair = generateHederaPrivateKey()
+            const publicKey = PublicKey.fromString(keyPair.publicKey);
 
-        const transaction = new AccountCreateTransaction()
-            .setKeyWithoutAlias(publicKey)
-            .setInitialBalance(new Hbar(2)) // Set initial balance for account
-            .setAccountMemo(`URN:${urn}`);
+            const transaction = new AccountCreateTransaction()
+                .setKeyWithoutAlias(publicKey)
+                .setInitialBalance(new Hbar(0)) // Set initial balance for account
+                .setAccountMemo(`URN:${urn}`);
 
-        const txResponse = await transaction.execute(this.client);
-        const receipt = await txResponse.getReceipt(this.client);
-        const newAccountId = receipt.accountId?.toString();
+            const txResponse = await transaction.execute(this.client);
+            const receipt = await txResponse.getReceipt(this.client);
+            const newAccountId = receipt.accountId?.toString();
 
-        if (!newAccountId) {
-            throw new Error('Failed to create account: accountId is undefined');
+            if (!newAccountId) {
+                throw new HttpException('Failed to retrieve account ID from receipt', HttpStatus.BAD_GATEWAY);
+            }
+            const didResult = await this.didService.createDid(urn, publicKey, newAccountId);
+
+            if (didResult.status !== 201) {
+                throw new HttpException('Failed to create DID document', HttpStatus.BAD_GATEWAY);
+            }
+            return {
+                status: 201,
+                message: 'Hedera sub-account created successfully',
+                accountId: newAccountId,
+                did: didResult.did,
+                fileId: didResult.fileId,
+                keyPair: keyPair
+            };
         }
-        const didResult = await this.didService.createDid(urn, publicKey);
-
-        return {
-            accountId: newAccountId,
-            did: didResult.did,
-            fileId: didResult.fileId,
-            keyPair: keyPair
-        };
+        catch (err) {
+            console.error('Error in createSubAccount:', err);
+            throw new HttpException(
+                'Hedera account creation failed: ' + err.message,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
     }
 }
