@@ -76,7 +76,7 @@ export class VcController {
                 );
                 results.push({ status: "success", ...result });
             } catch (err) {
-                results.push({            
+                results.push({
                     status: "error",
                     message: twin.twinUrn ? `Failed to issue VC for ${twin.twinUrn}: ${err.message}` : `Failed to issue VC: ${err.message}`,
                 });
@@ -105,80 +105,6 @@ export class VcController {
         }
     }
 
-  
-    @Post('create-new-topic')
-    @ApiOperation({ summary: 'Create a new HCS topic for a region' })
-    @ApiBody({ type: CreateTopicDto })
-    @ApiResponse({ status: 201, description: 'New topic created', type: CreateTopicResponseDto })
-    async createNewTopic(@Body() body: CreateTopicDto): Promise<CreateTopicResponseDto> {
-        const { region } = body;
-        const result = await this.vcService.createNewTopic(region);
-        return {
-            status: result.status,
-            message: result.message,
-            region: result.region,
-            topicId: result.topicId,
-            memo: result.memo,
-        } as CreateTopicResponseDto;
-    }
-
-
-    @Post('issue-batch')
-    @ApiOperation({ summary: 'Issue multiple VCs for a batch of twins' })
-    @ApiBody({ type: IssueVcBatchDto })
-    @ApiResponse({ status: 201, description: 'Batch VC issuance completed', type: IssueVcBatchResponseDto })
-    @ApiResponse({ status: 400, description: 'Invalid or missing fields' })
-    @ApiResponse({ status: 207, description: 'Batch VC issuance completed with some errors' })
-    @ApiResponse({ status: 500, description: 'All VC issuances failed' })
-    async issueVcBatch(@Body() body: IssueVcBatchDto): Promise<IssueVcBatchResponseDto> {
-        const { holderDid, privateKey, subAccountId, twins, location } = body;
-
-        if (!holderDid || !privateKey || !subAccountId || !Array.isArray(twins) || twins.length === 0) {
-            throw new HttpException('Missing required fields or empty twins array', HttpStatus.BAD_REQUEST);
-        }
-
-        const results: Array<{ status: "success" | "error"; message?: string } & Record<string, any>> = [];
-
-        for (const twin of twins) {
-            try {
-                const result = await this.vcService.issueVc(
-                    holderDid,
-                    twin.twinUrn,
-                    location || 'Global', // default location
-                    twin.status || 'Pending',
-                    privateKey,
-                    subAccountId,
-                );
-                results.push({ status: "success", ...result });
-            } catch (err) {
-                results.push({            
-                    status: "error",
-                    message: twin.twinUrn ? `Failed to issue VC for ${twin.twinUrn}: ${err.message}` : `Failed to issue VC: ${err.message}`,
-                });
-            }
-        }
-
-        if (results.length === 0) {
-            throw new HttpException('No valid twins provided for VC issuance', HttpStatus.BAD_REQUEST);
-        }
-        if (results.every(result => result.status === "error")) {
-            throw new HttpException('All VC issuances failed', HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-        if (results.every(result => result.status === "success")) {
-            return {
-                status: 201,
-                message: 'Batch VC issuance completed',
-                results,
-            };
-        }
-        else {
-            return {
-                status: 207, // Partial success
-                message: 'Batch VC issuance completed with some errors',
-                results,
-            };
-        }
-    }
 
     @Post('revoke-vc')
     @ApiOperation({ summary: 'Revoke a Verifiable Credential' })

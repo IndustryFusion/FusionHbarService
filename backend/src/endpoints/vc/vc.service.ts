@@ -59,20 +59,6 @@ export class VcService {
         }
     }
 
-    // async ensureTopicExists(topicId) {
-    //     try {
-    //         const query = new TopicInfoQuery().setTopicId(topicId);
-    //         const info = await query.execute(this.client);
-    //         console.log("Topic exists:", info);
-    //         return topicId; // Return existing topic ID
-    //     } catch (error) {
-    //         if (error.status && error.status.toString() === "INVALID_TOPIC_ID") {
-    //             console.log("Topic does not exist, creating a new one...");
-    //             return this.createNewTopic(this.client);
-    //         }
-    //         throw error; // Handle other errors
-    //     }
-    // }
 
     async issueVc(holderDid: string, twinUrn: string, location: string, status: string, privateKey: string, subAccountId: string): Promise<Record<string, any>> {
         try {
