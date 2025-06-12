@@ -26,16 +26,28 @@ export function generateVcDocument(holderDid: string, twinUrn: string, location:
     vc: {
       '@context': ['https://www.w3.org/2018/credentials/v1'],
       id: "urn:vc:product:" + vcId,
-      type: ['VerifiableCredential'],
+      type: 'VerifiableCredential',
       issuer: 'did:hedera:0.0.999', // replace with your platform DID
       issuanceDate,
       credentialSubject: {
-          id: twinUrn,
-          status: status,
-          location: location,
-          owner: holderDid,
-          ownerHederaAccountId: subAccountId, // Assuming holderDid is the Hedera account ID
+        id: twinUrn,
+        status: status,
+        location: location,
+        owner: holderDid,
+        ownerHederaAccountId: subAccountId, // Assuming holderDid is the Hedera account ID
       }
     }
+  };
+}
+
+
+export function generateRevokeVcDocument(vcId: string, twinUrn: string, revocationReason: string): Record<string, any> {
+  return {
+    vcId: vcId,
+    productUrn: twinUrn,
+    revokedAt: new Date().toISOString(),
+    type: 'VCRevocation',
+    reason: revocationReason,
+    revokedBy: 'did:hedera:0.0.999', // platform or issuer DID
   };
 }

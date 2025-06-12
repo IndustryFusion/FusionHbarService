@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 
-import { Client, FileCreateTransaction, Hbar, PublicKey } from '@hashgraph/sdk';
+
+import { Client, FileContentsQuery, FileCreateTransaction, FileId, FileUpdateTransaction, Hbar, PublicKey } from '@hashgraph/sdk';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { generateDidDocument } from './did.template';
 
@@ -50,6 +51,64 @@ export class DidService {
             console.error('❌ Failed to create DID document:', error);
             throw new HttpException(
                 'Failed to create DID document: ' + error.message,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+      
+    async revokeDid(fileId: string, revocationReason: string): Promise<Record<string, any>> {
+        try {
+            const fileContents = await new FileContentsQuery()
+                .setFileId(FileId.fromString(fileId))
+                .execute(this.client);
+
+            const didDocument = JSON.parse(fileContents.toString());
+            didDocument.revoked = true;
+            didDocument.revokedAt = new Date().toISOString();
+            didDocument.revocationReason = revocationReason;
+
+            const updatedContents = Buffer.from(JSON.stringify(didDocument));
+
+            await new FileUpdateTransaction()
+                .setFileId(FileId.fromString(fileId))
+                .setContents(updatedContents)
+                .setMaxTransactionFee(new Hbar(5))
+                .execute(this.client);
+
+            return {
+                status: 201,
+                message: 'DID document revoked successfully',
+                did: didDocument.id,
+                fileId
+            };
+        } catch (error) {
+            console.error('❌ Failed to revoke DID document:', error);
+            throw new HttpException(
+                'Failed to Revoke DID document: ' + error.message,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+    async isDidRevoked(fileId: string): Promise<boolean> {
+        try {
+            if (!fileId) {
+                throw new HttpException('fileId is required', HttpStatus.BAD_REQUEST);
+            }
+            const fileIdObj = FileId.fromString(fileId);
+            if (!fileIdObj) {
+                throw new HttpException('Invalid fileId format', HttpStatus.BAD_REQUEST);
+            }
+            const contents = await new FileContentsQuery()
+                .setFileId(fileIdObj)
+                .execute(this.client);
+
+            const doc = JSON.parse(Buffer.from(contents).toString());
+            return doc.revoked === true;
+        } catch (error) {
+            console.error('❌ Failed to check DID status:', error);
+            throw new HttpException(
+                'Failed to check DID status: ' + error.message,
                 HttpStatus.INTERNAL_SERVER_ERROR,
             );
         }

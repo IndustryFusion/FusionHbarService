@@ -4,6 +4,7 @@
 
 ## Description
 
+
 This service is responsible for providing endpoints for IndustryFusion user/company, product objects to be published to Hedera Blockchain to prove authenticity and ownership of Digital Twins.
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
