@@ -20,7 +20,6 @@ export class AccountController {
         status: 500,
         description: 'Internal server error during subaccount creation',
     })
-    @Post('create-subaccount')
     async createSubAccount(@Body() dto: CreateAccountDto): Promise<CreateAccountResponse> {
         try {
             return await this.accountService.createSubAccount(dto.companyUrn);

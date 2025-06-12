@@ -8,11 +8,12 @@ import { AccountController } from './endpoints/account/account.controller';
 import { VcService } from './endpoints/vc/vc.service';
 import { AccountService } from './endpoints/account/account.service';
 import { HederaClientProvider } from './hashgraph.provider';
+import { MirrorNodeService } from './endpoints/vc/mirror-node.service';
 
 @Module({
   imports: [],
   controllers: [AppController, DidController, VcController, AccountController],
-  providers: [AppService, DidService, VcService, AccountService, HederaClientProvider],
+  providers: [AppService, DidService, VcService, AccountService, HederaClientProvider, MirrorNodeService],
   exports: [HederaClientProvider]
 })
 export class AppModule {}

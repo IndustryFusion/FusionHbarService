@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 
-import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Client, Hbar, PrivateKey, TopicCreateTransaction, TopicInfoQuery, TopicMessageSubmitTransaction } from '@hashgraph/sdk';
-import { generateVcDocument } from './vc.template';
+import { generateRevokeVcDocument, generateVcDocument } from './vc.template';
+import { MirrorNodeService } from './mirror-node.service';
 
 @Injectable()
 export class VcService {
@@ -24,7 +25,7 @@ export class VcService {
     private readonly privateKey = process.env.HEDERA_PRIVATE_KEY!;
     private readonly topicId = process.env.VC_TOPIC_ID!; // HCS Topic ID
 
-    constructor(@Inject('HEDERA_CLIENT') private readonly client: Client) { }
+    constructor(@Inject('HEDERA_CLIENT') private readonly client: Client, private readonly mirrorNodeService: MirrorNodeService) { }
 
     async createNewTopic(region: string): Promise<Record<string, any>> {
         try {
@@ -73,7 +74,7 @@ export class VcService {
     //     }
     // }
 
-    async issueVc(holderDid: string, twinUrn: string, location: string = 'Global', status: string = 'Pending', privateKey: string, subAccountId: string): Promise<Record<string, any>> {
+    async issueVc(holderDid: string, twinUrn: string, location: string, status: string, privateKey: string, subAccountId: string): Promise<Record<string, any>> {
         try {
             const issuanceDate = new Date().toISOString();
 
@@ -84,7 +85,7 @@ export class VcService {
                     type: 'Ed25519Signature2020',
                     created: issuanceDate,
                     proofPurpose: 'assertionMethod',
-                    verificationMethod: `${this.issuerDid}#keys-1`
+                    verificationMethod: `${holderDid}#keys-1`
                 }
             };
 
@@ -119,6 +120,63 @@ export class VcService {
             console.error('❌ Failed to issue VC:', error);
             throw new HttpException(
                 `Failed to issue VC: ${error.message || 'Unknown error'}`,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+    async revokeVc(twinUrn: string, vcId: string, revocationReason: string): Promise<Record<string, any>> {
+        try {
+            const latestVc = await this.mirrorNodeService.getLatestVcById(this.topicId, vcId);
+            if (!latestVc) {
+                throw new NotFoundException(`No VC found for vcId ${vcId}`);
+            }
+            const issuanceDate = new Date().toISOString();
+            const vcHash = this.mirrorNodeService.computeVcHash(latestVc.vc);
+
+            const vcPayload = generateRevokeVcDocument(vcId, twinUrn, revocationReason);
+            const vcWithProof = {
+                ...vcPayload,
+                vcHash: vcHash,
+                proof: {
+                    type: 'Ed25519Signature2020',
+                    created: issuanceDate,
+                    proofPurpose: 'assertionMethod',
+                    verificationMethod: `did:hedera:0.0.999#keys-1`
+                }
+            };
+
+            const message = Buffer.from(JSON.stringify(vcWithProof));
+            const submitTx = new TopicMessageSubmitTransaction()
+                .setTopicId(this.topicId)
+                .setMessage(message)
+                .setMaxTransactionFee(new Hbar(0.1));
+
+            const freezeTransaction = (await submitTx).freezeWith(this.client);
+            const signedTransaction = freezeTransaction.sign(PrivateKey.fromStringECDSA(this.privateKey));
+            const response = (await signedTransaction).execute(this.client);
+            const receipt = await (await response).getReceipt(this.client);
+            const sequenceNumber = receipt?.topicSequenceNumber?.toString();
+            if (!sequenceNumber) {
+                throw new HttpException(
+                    'VC revoked but topic sequence number is missing',
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
+
+            return {
+                status: 201,
+                message: 'Verifiable Credential revoked successfully',
+                twinUrn: twinUrn,
+                vcId: vcPayload.vcId,
+                topicId: this.topicId,
+                sequenceNumber,
+                vc: vcWithProof
+            };
+        } catch (error) {
+            console.error('❌ Failed to revoke VC:', error);
+            throw new HttpException(
+                `Failed to revoke VC: ${error.message || 'Unknown error'}`,
                 HttpStatus.INTERNAL_SERVER_ERROR,
             );
         }

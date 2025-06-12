@@ -1,16 +1,18 @@
-import { Body, Controller, HttpException, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Param, Post } from '@nestjs/common';
 import { VcService } from './vc.service';
 import { IssueVcDto } from './dto/issue-vc.dto';
-import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { CreateTopicDto } from './dto/create-topic.dto';
 import { IssueVcResponseDto } from './dto/issue-vc.response';
 import { CreateTopicResponseDto } from './dto/create-topic.response';
 import { IssueVcBatchDto } from './dto/issue-vc-batch.dto';
 import { IssueVcBatchResponseDto } from './dto/issue-vc-batch.response';
+import { RevokeVcDto } from './dto/revoke-vc.dto';
+import { MirrorNodeService } from './mirror-node.service';
 
 @Controller('vc')
 export class VcController {
-    constructor(private readonly vcService: VcService) { }
+    constructor(private readonly vcService: VcService, private readonly mirrorNodeService: MirrorNodeService) { }
 
     @Post('issue')
     @ApiOperation({ summary: 'Issue a Verifiable Credential for a digital twin' })
@@ -101,4 +103,36 @@ export class VcController {
             };
         }
     }
+
+    @Post('revoke-vc')
+    @ApiOperation({ summary: 'Revoke a Verifiable Credential' })
+    @ApiBody({ type: RevokeVcDto })
+    @ApiResponse({ status: 201, description: 'VC revoked successfully' })
+    @ApiResponse({ status: 400, description: 'Missing required fields' })
+    async revokeVc(@Body() body: RevokeVcDto): Promise<Record<string, any>> {
+        const { twinUrn, vcId, revocationReason } = body;
+        if (!twinUrn || !vcId || !revocationReason) {
+            throw new HttpException(
+                'twinUrn, vcId, and revocationReason are required fields',
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+        return this.vcService.revokeVc(twinUrn, vcId, revocationReason);
+    }
+
+    @Get('vc/:vcId/:topicId/status')
+    @ApiParam({ name: 'vcId', type: String })
+    @ApiParam({ name: 'topicId', type: String })
+    @ApiOkResponse({ schema: { example: { revoked: true, topicId: "" } } })
+    async getVcStatus(@Param('vcId') vcId: string, @Param('topicId') topicId: string): Promise<{ revoked: boolean }> {
+        if (!vcId || !topicId) {
+            throw new HttpException(
+                'vcId and topicId are required parameters',
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+        const revoked = await this.mirrorNodeService.isVcRevoked(vcId, topicId);
+        return { revoked };
+    }
+
 }

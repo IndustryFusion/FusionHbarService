@@ -7,11 +7,11 @@ export class IssueVcDto {
   @ApiProperty({ description: 'URN of the digital twin', example: 'urn:twin:laser-001' })
   twinUrn: string;
 
-  @ApiPropertyOptional({ description: 'Location of the twin', example: 'Germany' })
-  location?: string;
+  @ApiProperty({ description: 'Location of the twin', example: 'Germany' })
+  location: string;
 
-  @ApiPropertyOptional({ description: 'Status of the twin', example: 'active' })
-  status?: string;
+  @ApiProperty({ description: 'Status of the twin', example: 'active' })
+  status: string;
 
   @ApiProperty({ description: 'Private key of the owner in PEM or hex format', example: '302e020100300506032b657004220420...' })
   privateKey: string;
