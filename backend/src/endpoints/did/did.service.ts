@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 
+
 import { Client, FileContentsQuery, FileCreateTransaction, FileId, FileUpdateTransaction, Hbar, PublicKey } from '@hashgraph/sdk';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { generateDidDocument } from './did.template';
@@ -54,7 +55,7 @@ export class DidService {
             );
         }
     }
-
+      
     async revokeDid(fileId: string, revocationReason: string): Promise<Record<string, any>> {
         try {
             const fileContents = await new FileContentsQuery()
@@ -111,6 +112,5 @@ export class DidService {
                 HttpStatus.INTERNAL_SERVER_ERROR,
             );
         }
-
     }
 }

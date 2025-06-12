@@ -40,6 +40,7 @@ export function generateVcDocument(holderDid: string, twinUrn: string, location:
   };
 }
 
+
 export function generateRevokeVcDocument(vcId: string, twinUrn: string, revocationReason: string): Record<string, any> {
   return {
     vcId: vcId,

@@ -125,6 +125,7 @@ export class VcService {
         }
     }
 
+
     async revokeVc(twinUrn: string, vcId: string, revocationReason: string): Promise<Record<string, any>> {
         try {
             const latestVc = await this.mirrorNodeService.getLatestVcById(this.topicId, vcId);
