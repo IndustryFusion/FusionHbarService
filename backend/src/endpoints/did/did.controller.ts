@@ -30,7 +30,7 @@ export class DidController {
         }
     }
 
-    @Get('did/:fileId/status')
+    @Get('/status/:fileId')
     @ApiParam({ name: 'fileId', type: String })
     @ApiOkResponse({ schema: { example: { revoked: false } } })
     async getDidStatus(@Param('fileId') fileId: string) {
