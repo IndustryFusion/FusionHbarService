@@ -36,11 +36,9 @@ export class MirrorNodeService {
         const url = `${this.MIRROR_API_URL}/topics/${topicId}/messages?limit=100&order=desc`;
         const { data } = await axios.get(url);
 
-        for (const msg of data.messages) {
-            const json = JSON.parse(Buffer.from(msg.message, 'base64').toString('utf-8'));
-            if (json.type === 'VCRevocation' && json.vcId === vcId) {
-                return true;
-            }
+        const json = JSON.parse(Buffer.from(data.messages[0], 'base64').toString('utf-8'));
+        if (json.type === 'VCRevocation' && json.vcId === vcId) {
+            return true;
         }
 
         return false;
