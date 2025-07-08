@@ -9,7 +9,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Fusion HBAR Service API')
-    .setDescription('TBD')
+    .setDescription('Endpoints for IndustryFusion user/company, product objects to be published to Hedera Blockchain to prove authenticity and ownership of Digital Twins.')
     .setVersion('1.0')
     .addBearerAuth(
       {type: 'http',
