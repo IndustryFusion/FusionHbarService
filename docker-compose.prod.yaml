@@ -8,4 +8,4 @@ services:
       args:
         ENV: prod
     ports:
-    - "4007:4007"
+    - "4021:4021"
