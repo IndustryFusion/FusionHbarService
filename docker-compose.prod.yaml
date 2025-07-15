@@ -6,6 +6,6 @@ services:
     build:
       context: ./backend
       args:
-        ENV: prod
+        ENV: dev #set to dev for testing in prod AWS cluster; change to prod whenever necessary
     ports:
     - "4021:4021"
