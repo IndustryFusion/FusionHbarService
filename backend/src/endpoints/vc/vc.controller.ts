@@ -75,7 +75,7 @@ export class VcController {
                     privateKey,
                     subAccountId,
                 );
-                results.push({ status: "success", ...result });
+                results.push({ result });
             } catch (err) {
                 results.push({
                     status: "error",
@@ -87,10 +87,10 @@ export class VcController {
         if (results.length === 0) {
             throw new HttpException('No valid twins provided for VC issuance', HttpStatus.BAD_REQUEST);
         }
-        if (results.every(result => result.status !== 201)) {
+        if (results.every(result => Number(result.status) !== 201)) {
             throw new HttpException('All VC issuances failed', HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        if (results.every(result => result.status === 201)) {
+        if (results.every(result => Number(result.status) === 201)) {
             return {
                 status: 201,
                 message: 'Batch VC issuance completed',
