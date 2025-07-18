@@ -55,7 +55,7 @@ export class VcController {
     @ApiResponse({ status: 400, description: 'Invalid or missing fields' })
     @ApiResponse({ status: 207, description: 'Batch VC issuance completed with some errors' })
     @ApiResponse({ status: 500, description: 'All VC issuances failed' })
-    async issueVcBatch(@Body() body: IssueVcBatchDto): Promise<> {
+    async issueVcBatch(@Body() body: IssueVcBatchDto) {
         const { holderDid, privateKey, subAccountId, twins, location } = body;
         console.log(body);
 
