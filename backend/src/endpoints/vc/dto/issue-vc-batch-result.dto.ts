@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class IssueVcBatchResultDto {
   @ApiProperty({ example: 'success', enum: ['success', 'error'] })
-  status: 'success' | 'error';
+  status: string;
 
   @ApiPropertyOptional({ example: 'urn:vc:twin:laser-001', description: 'Verifiable Credential ID (if success)' })
   vcId?: string;
