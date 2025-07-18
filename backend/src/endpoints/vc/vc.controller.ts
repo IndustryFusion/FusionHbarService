@@ -63,7 +63,7 @@ export class VcController {
             throw new HttpException('Missing required fields or empty twins array', HttpStatus.BAD_REQUEST);
         }
 
-        const results: Array<{ status: "success" | "error"; message?: string } & Record<string, any>> = [];
+        const results: Array<Record<string, any>> = [];
 
         for (const twin of twins) {
             try {
