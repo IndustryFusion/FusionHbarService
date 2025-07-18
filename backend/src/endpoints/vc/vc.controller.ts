@@ -75,7 +75,7 @@ export class VcController {
                     privateKey,
                     subAccountId,
                 );
-                results.push({ result });
+                results.push(result);
             } catch (err) {
                 results.push({
                     status: "error",
