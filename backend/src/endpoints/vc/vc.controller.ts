@@ -57,8 +57,9 @@ export class VcController {
     @ApiResponse({ status: 500, description: 'All VC issuances failed' })
     async issueVcBatch(@Body() body: IssueVcBatchDto): Promise<IssueVcBatchResponseDto> {
         const { holderDid, privateKey, subAccountId, twins, location } = body;
+        console.log(body);
 
-        if (!holderDid || !privateKey || !subAccountId || !Array.isArray(twins) || twins.length === 0) {
+        if (!holderDid || !privateKey || !subAccountId || twins.length === 0) {
             throw new HttpException('Missing required fields or empty twins array', HttpStatus.BAD_REQUEST);
         }
 
