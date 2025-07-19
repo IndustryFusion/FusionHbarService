@@ -123,18 +123,18 @@ export class VcController {
         return this.vcService.revokeVc(twinUrn, vcId, revocationReason);
     }
 
-    @Get('vc/:vcId/:topicId/status')
-    @ApiParam({ name: 'vcId', type: String })
+    @Get('vc/:sequenceNumber/:topicId/status')
+    @ApiParam({ name: 'sequenceNumber', type: String })
     @ApiParam({ name: 'topicId', type: String })
     @ApiOkResponse({ schema: { example: { revoked: true, topicId: "" } } })
-    async getVcStatus(@Param('vcId') vcId: string, @Param('topicId') topicId: string): Promise<{ revoked: boolean }> {
-        if (!vcId || !topicId) {
+    async getVcStatus(@Param('sequenceNumber') sequenceNumber: string, @Param('topicId') topicId: string): Promise<{ revoked: boolean }> {
+        if (!sequenceNumber || !topicId) {
             throw new HttpException(
                 'vcId and topicId are required parameters',
                 HttpStatus.BAD_REQUEST,
             );
         }
-        const revoked = await this.mirrorNodeService.isVcRevoked(vcId, topicId);
+        const revoked = await this.mirrorNodeService.isVcRevoked(Number(sequenceNumber), topicId);
         return { revoked };
     }
 
