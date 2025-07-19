@@ -39,7 +39,7 @@ export class MirrorNodeService {
 
         const base64Message = data.messages[0].message;
         const decodedJson = JSON.parse(Buffer.from(base64Message, 'base64').toString('utf-8'));
-        const decodedJson2 = JSON.parse(Buffer.from(data.messages[0], 'base64').toString('utf-8'));
+        const decodedJson2 = JSON.parse(data.messages[0]);
 
         console.log(decodedJson, sequenceNumber, topicId)
         if (decodedJson2.sequence_number === sequenceNumber && decodedJson2.topic_id === topicId && decodedJson.type === 'VerifiableCredential') {
