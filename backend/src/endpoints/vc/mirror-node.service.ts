@@ -14,10 +14,11 @@ export class MirrorNodeService {
 
         for (const msg of messages) {
             try {
-                const decoded = Buffer.from(msg, 'base64').toString('utf-8');
+                const decoded = Buffer.from(msg.message, 'base64').toString('utf-8');
                 const parsed = JSON.parse(decoded);
+                const parsed2 = JSON.parse(msg);
 
-                if (parsed?.topic_id === topicId && parsed?.vcId === vcId && parsed?.message?.type === 'VerifiableCredential') {
+                if (parsed2?.topic_id === topicId && parsed2?.vcId === vcId && parsed?.message?.type === 'VerifiableCredential') {
                     return parsed;
                 }
             } catch {
@@ -36,11 +37,12 @@ export class MirrorNodeService {
         const url = `${this.MIRROR_API_URL}/topics/${topicId}/messages?limit=100&order=desc`;
         const { data } = await axios.get(url);
 
-        const base64Message = data.messages[0];
+        const base64Message = data.messages[0].message;
         const decodedJson = JSON.parse(Buffer.from(base64Message, 'base64').toString('utf-8'));
+        const decodedJson2 = JSON.parse(Buffer.from(data.messages[0], 'base64').toString('utf-8'));
 
         console.log(decodedJson, sequenceNumber, topicId)
-        if (decodedJson.sequence_number === sequenceNumber && decodedJson.topic_id === topicId && decodedJson.message.type === 'VerifiableCredential') {
+        if (decodedJson2.sequence_number === sequenceNumber && decodedJson2.topic_id === topicId && decodedJson.type === 'VerifiableCredential') {
           return false;
         }
 
