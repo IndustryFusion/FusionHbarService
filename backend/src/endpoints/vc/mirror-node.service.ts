@@ -14,10 +14,10 @@ export class MirrorNodeService {
 
         for (const msg of messages) {
             try {
-                const decoded = Buffer.from(msg.message, 'base64').toString('utf-8');
+                const decoded = Buffer.from(msg, 'base64').toString('utf-8');
                 const parsed = JSON.parse(decoded);
 
-                if (parsed?.topic_id === topicId) {
+                if (parsed?.topic_id === topicId && parsed?.vcId === vcId && parsed?.message?.type === 'VerifiableCredential') {
                     return parsed;
                 }
             } catch {
@@ -36,11 +36,11 @@ export class MirrorNodeService {
         const url = `${this.MIRROR_API_URL}/topics/${topicId}/messages?limit=100&order=desc`;
         const { data } = await axios.get(url);
 
-        const base64Message = data.messages[0].message;
+        const base64Message = data.messages[0];
         const decodedJson = JSON.parse(Buffer.from(base64Message, 'base64').toString('utf-8'));
 
         console.log(decodedJson, sequenceNumber, topicId)
-        if (decodedJson.sequence_number === sequenceNumber && decodedJson.topic_id === topicId) {
+        if (decodedJson.sequence_number === sequenceNumber && decodedJson.topic_id === topicId && decodedJson.message.type === 'VerifiableCredential') {
           return false;
         }
 
