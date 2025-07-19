@@ -17,7 +17,7 @@ export class MirrorNodeService {
                 const decoded = Buffer.from(msg.message, 'base64').toString('utf-8');
                 const parsed = JSON.parse(decoded);
 
-                if (parsed?.vcId === vcId && parsed?.type !== 'VCRevocation') {
+                if (parsed?.topic_id === topicId) {
                     return parsed;
                 }
             } catch {
@@ -32,7 +32,7 @@ export class MirrorNodeService {
         return crypto.createHash('sha256').update(JSON.stringify(vcPayload)).digest('hex');
     }
 
-    async isVcRevoked(sequenceNumber: string, topicId: string): Promise<boolean> {
+    async isVcRevoked(sequenceNumber: number, topicId: string): Promise<boolean> {
         const url = `${this.MIRROR_API_URL}/topics/${topicId}/messages?limit=100&order=desc`;
         const { data } = await axios.get(url);
 
