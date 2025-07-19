@@ -18,7 +18,7 @@ export class MirrorNodeService {
                 const parsed = JSON.parse(decoded);
                 const parsed2 = msg;
 
-                if (parsed2?.topic_id === topicId && parsed2?.vcId === vcId && parsed?.message?.type === 'VerifiableCredential') {
+                if (parsed2?.topic_id === topicId && parsed2?.vcId === vcId && parsed?.message?.vc?.type === 'VerifiableCredential') {
                     return parsed;
                 }
             } catch {
@@ -42,7 +42,7 @@ export class MirrorNodeService {
         const decodedJson2 = data.messages[0];
 
         console.log(decodedJson, sequenceNumber, topicId)
-        if (decodedJson2.sequence_number === sequenceNumber && decodedJson2.topic_id === topicId && decodedJson.type === 'VerifiableCredential') {
+        if (decodedJson2.sequence_number === sequenceNumber && decodedJson2.topic_id === topicId && decodedJson.vc.type === 'VerifiableCredential') {
           return false;
         }
 
