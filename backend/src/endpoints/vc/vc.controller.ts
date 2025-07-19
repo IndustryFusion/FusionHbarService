@@ -123,7 +123,7 @@ export class VcController {
         return this.vcService.revokeVc(twinUrn, vcId, revocationReason);
     }
 
-    @Get('vc/:sequenceNumber/:topicId/status')
+    @Get('/:sequenceNumber/:topicId/status')
     @ApiParam({ name: 'sequenceNumber', type: String })
     @ApiParam({ name: 'topicId', type: String })
     @ApiOkResponse({ schema: { example: { revoked: true, topicId: "" } } })
