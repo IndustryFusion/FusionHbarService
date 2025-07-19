@@ -40,9 +40,9 @@ export class MirrorNodeService {
         const decodedJson = JSON.parse(Buffer.from(base64Message, 'base64').toString('utf-8'));
         
         if (decodedJson.sequence_number == sequenceNumber && decodedJson.topic_id === topicId) {
-          return true;
+          return false;
         }
 
-        return false;
+        return true;
     }
 }
