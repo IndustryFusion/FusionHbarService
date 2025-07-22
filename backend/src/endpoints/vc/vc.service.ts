@@ -76,12 +76,12 @@ export class VcService {
             };
 
             const info = await new AccountInfoQuery().setAccountId(subAccountId).execute(this.client);
-            console.log("Account Info:", info);
             const expectedPublicKey = info.key.toString();
-            const key = PrivateKey.fromStringECDSA(privateKey);
+            const key = PrivateKey.fromStringED25519(privateKey);
             const derivedPublicKey = key.publicKey.toString();
             console.log("Expected Public Key:", expectedPublicKey);
             console.log("Derived Public Key:", derivedPublicKey);
+            
             if (expectedPublicKey !== derivedPublicKey) {
                 throw new HttpException(
                     'Private key seems to be incorrect: expected public key does not match derived public key',
@@ -157,7 +157,7 @@ export class VcService {
                 .setMaxTransactionFee(new Hbar(0.1));
 
             const freezeTransaction = (await submitTx).freezeWith(this.client);
-            const signedTransaction = freezeTransaction.sign(PrivateKey.fromStringECDSA(this.privateKey));
+            const signedTransaction = freezeTransaction.sign(PrivateKey.fromStringED25519(this.privateKey));
             const response = (await signedTransaction).execute(this.client);
             const receipt = await (await response).getReceipt(this.client);
             const sequenceNumber = receipt?.topicSequenceNumber?.toString();
