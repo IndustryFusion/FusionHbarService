@@ -15,7 +15,7 @@
 */
 
 import { HttpException, HttpStatus, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { Client, Hbar, PrivateKey, TopicCreateTransaction, TopicInfoQuery, TopicMessageSubmitTransaction } from '@hashgraph/sdk';
+import { AccountInfoQuery, Client, Hbar, PrivateKey, TopicCreateTransaction, TopicInfoQuery, TopicMessageSubmitTransaction } from '@hashgraph/sdk';
 import { generateRevokeVcDocument, generateVcDocument } from './vc.template';
 import { MirrorNodeService } from './mirror-node.service';
 
@@ -75,14 +75,29 @@ export class VcService {
                 }
             };
 
+            const info = await new AccountInfoQuery().setAccountId(subAccountId).execute(this.client);
+
+            const expectedPublicKey = info.key.toString();
+            const key = PrivateKey.fromStringECDSA(privateKey);
+            const derivedPublicKey = key.publicKey.toString();
+            if (expectedPublicKey !== derivedPublicKey) {
+                throw new HttpException(
+                    'Private key seems to be incorrect: expected public key does not match derived public key',
+                    HttpStatus.BAD_REQUEST
+                );
+            }
+
+            console.log("✅ Private key matches the expected public key");
+
             const message = Buffer.from(JSON.stringify(vcWithProof));
+            
             const submitTx = new TopicMessageSubmitTransaction()
                 .setTopicId(this.topicId)
                 .setMessage(message)
                 .setMaxTransactionFee(new Hbar(0.1));
 
             const freezeTransaction = (await submitTx).freezeWith(this.client);
-            const signedTransaction = freezeTransaction.sign(PrivateKey.fromStringECDSA(privateKey));
+            const signedTransaction = freezeTransaction.sign(key);
             const response = (await signedTransaction).execute(this.client);
             const receipt = await (await response).getReceipt(this.client);
             const sequenceNumber = receipt?.topicSequenceNumber?.toString();
