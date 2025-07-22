@@ -76,10 +76,12 @@ export class VcService {
             };
 
             const info = await new AccountInfoQuery().setAccountId(subAccountId).execute(this.client);
-
+            console.log("Account Info:", info);
             const expectedPublicKey = info.key.toString();
             const key = PrivateKey.fromStringECDSA(privateKey);
             const derivedPublicKey = key.publicKey.toString();
+            console.log("Expected Public Key:", expectedPublicKey);
+            console.log("Derived Public Key:", derivedPublicKey);
             if (expectedPublicKey !== derivedPublicKey) {
                 throw new HttpException(
                     'Private key seems to be incorrect: expected public key does not match derived public key',
