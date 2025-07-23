@@ -130,12 +130,26 @@ export class VcController {
     async getVcStatus(@Param('sequenceNumber') sequenceNumber: string, @Param('topicId') topicId: string): Promise<{ revoked: boolean }> {
         if (!sequenceNumber || !topicId) {
             throw new HttpException(
-                'vcId and topicId are required parameters',
+                'sequenceNumber and topicId are required parameters',
                 HttpStatus.BAD_REQUEST,
             );
         }
         const revoked = await this.mirrorNodeService.isVcRevoked(Number(sequenceNumber), topicId);
         return { revoked };
+    }
+
+    @Get('get-on-chain-vc/:vcId/:topicId')
+    @ApiParam({ name: 'vcId', type: String })
+    @ApiParam({ name: 'topicId', type: String })
+    async getOnChainCert(@Param('vcId') vcId: string, @Param('topicId') topicId: string): Promise<{ messages: [] }> {
+        if (!vcId || !topicId) {
+            throw new HttpException(
+                'vcId and topicId are required parameters',
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+        const messages = await this.mirrorNodeService.getLatestVcById(topicId, vcId);
+        return { messages: messages };
     }
 
 }
