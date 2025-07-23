@@ -18,7 +18,7 @@ export class MirrorNodeService {
                 const parsed = JSON.parse(decoded);
                 const parsed2 = msg;
 
-                if (parsed2?.topic_id === topicId && parsed2?.vcId === vcId && parsed?.message?.vc?.type === 'VerifiableCredential') {
+                if (parsed2?.topic_id === topicId && parsed?.vcId === vcId && parsed?.vc?.type === 'VerifiableCredential') {
                     return parsed;
                 }
             } catch {
