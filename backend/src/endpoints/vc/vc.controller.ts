@@ -9,7 +9,7 @@ import { IssueVcBatchDto } from './dto/issue-vc-batch.dto';
 import { IssueVcBatchResponseDto } from './dto/issue-vc-batch.response';
 import { RevokeVcDto } from './dto/revoke-vc.dto';
 import { MirrorNodeService } from './mirror-node.service';
-
+import pLimit from 'p-limit';
 
 @Controller('vc')
 export class VcController {
@@ -63,26 +63,34 @@ export class VcController {
             throw new HttpException('Missing required fields or empty twins array', HttpStatus.BAD_REQUEST);
         }
 
-        const results: Array<Record<string, any>> = [];
+        const limit = pLimit(10); // Max 10 concurrent tasks, tune as per infra
+        const tasks: Array<Promise<Record<string, any>>> = [];
 
         for (const twin of twins) {
-            try {
-                const result = await this.vcService.issueVc(
-                    holderDid,
-                    twin.twinUrn,
-                    location || 'Global', // default location
-                    twin.status || 'Pending',
-                    privateKey,
-                    subAccountId,
-                );
-                results.push(result);
-            } catch (err) {
-                results.push({
-                    status: "error",
-                    message: twin.twinUrn ? `Failed to issue VC for ${twin.twinUrn}: ${err.message}` : `Failed to issue VC: ${err.message}`,
-                });
-            }
+            tasks.push(limit(async () => {
+                try {
+                    const result = await this.vcService.issueVc(
+                        holderDid,
+                        twin.twinUrn,
+                        location || 'Global',
+                        twin.status || 'Pending',
+                        privateKey,
+                        subAccountId,
+                    );
+                    return result;
+                } catch (err) {
+                    return {
+                        status: "error",
+                        message: twin.twinUrn
+                            ? `Failed to issue VC for ${twin.twinUrn}: ${err.message}`
+                            : `Failed to issue VC: ${err.message}`,
+                    };
+                }
+            }));
         }
+
+        const results = await Promise.all(tasks);
+        console.log("Batch issuance results:", results);
 
         if (results.length === 0) {
             throw new HttpException('No valid twins provided for VC issuance', HttpStatus.BAD_REQUEST);
