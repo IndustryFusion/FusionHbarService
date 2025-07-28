@@ -50,7 +50,7 @@ export class MirrorNodeService {
     }
 
     async isVcRevoked(sequenceNumber: number, topicId: string): Promise<boolean> {
-        let url = `${this.MIRROR_API_URL}/topics/${topicId}/messages?limit=10&order=desc`;
+        let url: string | null = `${this.MIRROR_API_URL}/topics/${topicId}/messages?limit=10&order=desc`;
     
         while (url) {
             const { data } = await axios.get(url);
@@ -78,5 +78,4 @@ export class MirrorNodeService {
     
         return true; // Not found → assume revoked
     }
-
 }
