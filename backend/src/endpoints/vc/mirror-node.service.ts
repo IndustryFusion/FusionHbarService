@@ -33,7 +33,7 @@ export class MirrorNodeService {
         return crypto.createHash('sha256').update(JSON.stringify(vcPayload)).digest('hex');
     }
 
-    async isVcRevoked(sequenceNumber: number, topicId: string): Promise<boolean> {
+    async isVcRevoked_old(sequenceNumber: number, topicId: string): Promise<boolean> {
         const url = `${this.MIRROR_API_URL}/topics/${topicId}/messages?limit=100&order=desc`;
         const { data } = await axios.get(url);
 
@@ -48,4 +48,35 @@ export class MirrorNodeService {
 
         return true;
     }
+
+    async isVcRevoked(sequenceNumber: number, topicId: string): Promise<boolean> {
+        let url = `${this.MIRROR_API_URL}/topics/${topicId}/messages?limit=10&order=desc`;
+    
+        while (url) {
+            const { data } = await axios.get(url);
+    
+            for (const msg of data.messages) {
+                if (msg.sequence_number === sequenceNumber && msg.topic_id === topicId) {
+                    const base64Message = msg.message;
+                    const decodedJson = JSON.parse(Buffer.from(base64Message, 'base64').toString('utf-8'));
+    
+                    console.log(decodedJson, sequenceNumber, topicId);
+    
+                    if (decodedJson.vc?.type === 'VerifiableCredential') {
+                        return false; // Not revoked
+                    } else {
+                        return true; // Revoked or unknown type
+                    }
+                }
+            }
+    
+            const lowestSeq = data.messages[data.messages.length - 1]?.sequence_number;
+            if (lowestSeq < sequenceNumber) break; // Stop early: target not in remaining pages
+    
+            url = data.links?.next ? `${this.MIRROR_API_URL}${data.links.next}` : null;
+        }
+    
+        return true; // Not found → assume revoked
+    }
+
 }
