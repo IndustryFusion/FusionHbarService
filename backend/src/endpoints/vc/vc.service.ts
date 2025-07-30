@@ -33,7 +33,7 @@ export class VcService {
 
             const transaction = new TopicCreateTransaction()
                 .setTopicMemo(memo)
-                .setMaxTransactionFee(new Hbar(0));
+                .setMaxTransactionFee(new Hbar(0.5));
 
             const txResponse = await transaction.execute(this.client);
             const receipt = await txResponse.getReceipt(this.client);
@@ -96,7 +96,7 @@ export class VcService {
             const submitTx = new TopicMessageSubmitTransaction()
                 .setTopicId(this.topicId)
                 .setMessage(message)
-                .setMaxTransactionFee(new Hbar(0.1));
+                .setMaxTransactionFee(new Hbar(0.5));
 
             const freezeTransaction = (await submitTx).freezeWith(this.client);
             const signedTransaction = freezeTransaction.sign(key);
@@ -154,7 +154,7 @@ export class VcService {
             const submitTx = new TopicMessageSubmitTransaction()
                 .setTopicId(this.topicId)
                 .setMessage(message)
-                .setMaxTransactionFee(new Hbar(0.1));
+                .setMaxTransactionFee(new Hbar(0.5));
 
             const freezeTransaction = (await submitTx).freezeWith(this.client);
             const signedTransaction = freezeTransaction.sign(PrivateKey.fromStringED25519(this.privateKey));
