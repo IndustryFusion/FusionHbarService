@@ -72,7 +72,7 @@ export class DidService {
             await new FileUpdateTransaction()
                 .setFileId(FileId.fromString(fileId))
                 .setContents(updatedContents)
-                .setMaxTransactionFee(new Hbar(5))
+                .setMaxTransactionFee(new Hbar(0.5))
                 .execute(this.client);
 
             return {
