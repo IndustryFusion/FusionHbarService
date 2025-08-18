@@ -9,7 +9,6 @@ import { IssueVcBatchDto } from './dto/issue-vc-batch.dto';
 import { IssueVcBatchResponseDto } from './dto/issue-vc-batch.response';
 import { RevokeVcDto } from './dto/revoke-vc.dto';
 import { MirrorNodeService } from './mirror-node.service';
-import pLimit from 'p-limit';
 
 @Controller('vc')
 export class VcController {
@@ -61,6 +60,7 @@ export class VcController {
         if (!holderDid || !privateKey || !subAccountId || twins.length === 0) {
             throw new HttpException('Missing required fields or empty twins array', HttpStatus.BAD_REQUEST);
         }
+        const pLimit = (await import('p-limit')).default;
 
         const limit = pLimit(10); // Max 10 concurrent tasks, tune as per infra
         const tasks: Array<Promise<Record<string, any>>> = [];
