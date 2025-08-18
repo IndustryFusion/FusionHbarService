@@ -16,6 +16,7 @@
 
 import { Client, AccountId, PrivateKey } from '@hashgraph/sdk';
 import * as dotenv from 'dotenv';
+import { Mnemonic } from '@hashgraph/sdk';
 dotenv.config(); // Ensure variables are loaded
 
 const HEDERA_ACCOUNT_ID = process.env.HEDERA_ACCOUNT_ID;
@@ -24,7 +25,7 @@ const HEDERA_NETWORK = process.env.HEDERA_NETWORK;
 
 export const HederaClientProvider = {
   provide: 'HEDERA_CLIENT',
-  useFactory: () => {
+  useFactory: async () => {
     if (!HEDERA_ACCOUNT_ID || !HEDERA_PRIVATE_KEY || !HEDERA_NETWORK) {
       throw new Error('HEDERA_ACCOUNT_ID, HEDERA_PRIVATE_KEY or HEDERA_NETWORK is not defined in the environment variables.');
     }
@@ -33,16 +34,23 @@ export const HederaClientProvider = {
 
     if (HEDERA_NETWORK === 'mainnet') {
       client = Client.forMainnet();
+      const mnemonicObj = await Mnemonic.fromString(HEDERA_PRIVATE_KEY);
+
+      // Convert mnemonic directly to PrivateKey
+      const privateKey = await mnemonicObj.toStandardEd25519PrivateKey();
+      client.setOperator(
+        AccountId.fromString(HEDERA_ACCOUNT_ID),
+        privateKey,
+      );
     } else if (HEDERA_NETWORK === 'testnet') {
       client = Client.forTestnet();
+      client.setOperator(
+        AccountId.fromString(HEDERA_ACCOUNT_ID),
+        PrivateKey.fromStringECDSA(HEDERA_PRIVATE_KEY),
+      );
     } else {
       throw new Error(`Unsupported HEDERA_NETWORK: ${HEDERA_NETWORK}`);
     }
-
-    client.setOperator(
-      AccountId.fromString(HEDERA_ACCOUNT_ID),
-      PrivateKey.fromStringECDSA(HEDERA_PRIVATE_KEY),
-    );
     return client;
   },
 };
