@@ -21,7 +21,6 @@ import { MirrorNodeService } from './mirror-node.service';
 
 @Injectable()
 export class VcService {
-    private readonly issuerDid = process.env.PLATFORM_DID!;
     private readonly privateKey = process.env.HEDERA_PRIVATE_KEY!;
     private readonly topicId = process.env.VC_TOPIC_ID!; // HCS Topic ID
 
@@ -33,7 +32,7 @@ export class VcService {
 
             const transaction = new TopicCreateTransaction()
                 .setTopicMemo(memo)
-                .setMaxTransactionFee(new Hbar(0.5));
+                .setMaxTransactionFee(new Hbar(2));
 
             const txResponse = await transaction.execute(this.client);
             const receipt = await txResponse.getReceipt(this.client);
@@ -94,7 +93,7 @@ export class VcService {
             const submitTx = new TopicMessageSubmitTransaction()
                 .setTopicId(this.topicId)
                 .setMessage(message)
-                .setMaxTransactionFee(new Hbar(0.5));
+                .setMaxTransactionFee(new Hbar(2));
 
             const freezeTransaction = (await submitTx).freezeWith(this.client);
             const signedTransaction = freezeTransaction.sign(key);
@@ -152,7 +151,7 @@ export class VcService {
             const submitTx = new TopicMessageSubmitTransaction()
                 .setTopicId(this.topicId)
                 .setMessage(message)
-                .setMaxTransactionFee(new Hbar(0.5));
+                .setMaxTransactionFee(new Hbar(2));
 
             const freezeTransaction = (await submitTx).freezeWith(this.client);
             const signedTransaction = freezeTransaction.sign(PrivateKey.fromStringED25519(this.privateKey));
