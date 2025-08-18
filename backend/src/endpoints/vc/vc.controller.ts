@@ -57,7 +57,6 @@ export class VcController {
     @ApiResponse({ status: 500, description: 'All VC issuances failed' })
     async issueVcBatch(@Body() body: IssueVcBatchDto) {
         const { holderDid, privateKey, subAccountId, twins, location } = body;
-        console.log(body);
 
         if (!holderDid || !privateKey || !subAccountId || twins.length === 0) {
             throw new HttpException('Missing required fields or empty twins array', HttpStatus.BAD_REQUEST);
@@ -90,7 +89,6 @@ export class VcController {
         }
 
         const results = await Promise.all(tasks);
-        console.log("Batch issuance results:", results);
 
         if (results.length === 0) {
             throw new HttpException('No valid twins provided for VC issuance', HttpStatus.BAD_REQUEST);

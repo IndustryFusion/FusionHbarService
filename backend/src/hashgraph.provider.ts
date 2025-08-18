@@ -25,7 +25,6 @@ const HEDERA_NETWORK = process.env.HEDERA_NETWORK;
 export const HederaClientProvider = {
   provide: 'HEDERA_CLIENT',
   useFactory: () => {
-    console.log('ENV CHECK:', HEDERA_ACCOUNT_ID, HEDERA_PRIVATE_KEY, HEDERA_NETWORK);
     if (!HEDERA_ACCOUNT_ID || !HEDERA_PRIVATE_KEY || !HEDERA_NETWORK) {
       throw new Error('HEDERA_ACCOUNT_ID, HEDERA_PRIVATE_KEY or HEDERA_NETWORK is not defined in the environment variables.');
     }
