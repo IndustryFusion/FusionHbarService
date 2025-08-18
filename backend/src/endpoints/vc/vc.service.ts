@@ -79,8 +79,6 @@ export class VcService {
             const expectedPublicKey = info.key.toString();
             const key = PrivateKey.fromStringED25519(privateKey);
             const derivedPublicKey = key.publicKey.toString();
-            console.log("Expected Public Key:", expectedPublicKey);
-            console.log("Derived Public Key:", derivedPublicKey);
             
             if (expectedPublicKey !== derivedPublicKey) {
                 throw new HttpException(
