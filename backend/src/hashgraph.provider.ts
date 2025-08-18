@@ -37,7 +37,7 @@ export const HederaClientProvider = {
       const mnemonicObj = await Mnemonic.fromString(HEDERA_PRIVATE_KEY);
 
       // Convert mnemonic directly to PrivateKey
-      const privateKey = await mnemonicObj.toStandardEd25519PrivateKey();
+      const privateKey = await mnemonicObj.toPrivateKey();
       client.setOperator(
         AccountId.fromString(HEDERA_ACCOUNT_ID),
         privateKey,

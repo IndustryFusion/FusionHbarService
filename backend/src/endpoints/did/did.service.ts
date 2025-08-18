@@ -32,7 +32,7 @@ export class DidService {
             const createTx = new FileCreateTransaction()
                 .setKeys([this.client.operatorPublicKey!])
                 .setContents(didDocumentJson)
-                .setMaxTransactionFee(new Hbar(0.5))
+                .setMaxTransactionFee(new Hbar(2))
 
             const response = await createTx.execute(this.client);
             const receipt = await response.getReceipt(this.client);
@@ -72,7 +72,7 @@ export class DidService {
             await new FileUpdateTransaction()
                 .setFileId(FileId.fromString(fileId))
                 .setContents(updatedContents)
-                .setMaxTransactionFee(new Hbar(0.5))
+                .setMaxTransactionFee(new Hbar(2))
                 .execute(this.client);
 
             return {
