@@ -134,6 +134,7 @@ export class VcService {
             }
             const issuanceDate = new Date().toISOString();
             const vcHash = this.mirrorNodeService.computeVcHash(latestVc.vc);
+            const ownerDid = process.env.PLATFORM_DID;
 
             const vcPayload = generateRevokeVcDocument(vcId, twinUrn, revocationReason);
             const vcWithProof = {
@@ -143,7 +144,7 @@ export class VcService {
                     type: 'Ed25519Signature2020',
                     created: issuanceDate,
                     proofPurpose: 'assertionMethod',
-                    verificationMethod: `did:hedera:0.0.999#keys-1`
+                    verificationMethod: `${ownerDid}#keys-1`
                 }
             };
 
