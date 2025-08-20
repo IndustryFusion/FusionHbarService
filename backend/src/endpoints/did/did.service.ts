@@ -25,7 +25,7 @@ export class DidService {
 
     async createDid(urn: string, publicKey: PublicKey, subAccountId: string): Promise<Record<string, any>> {
         try {
-            const did = urn;
+            const did = urn.replace(/^urn:ifric:/, "did:hedera:");
             const didDocument = generateDidDocument(did, publicKey, subAccountId); // Assuming URN format is urn:did:hedera:<subAccountId
             const didDocumentJson = Buffer.from(JSON.stringify(didDocument));
 
