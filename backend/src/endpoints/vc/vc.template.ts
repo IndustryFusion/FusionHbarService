@@ -18,6 +18,7 @@ export function generateVcDocument(holderDid: string, twinUrn: string, location:
   const vcId = twinUrn.split(":")[2]; // Or use your own namespace/format
 
   const issuanceDate = new Date().toISOString();
+  const platformDid = process.env.PLATFORM_DID;
 
   return {
     vcId: "urn:vc:product:" + vcId,
@@ -27,7 +28,7 @@ export function generateVcDocument(holderDid: string, twinUrn: string, location:
       '@context': ['https://www.w3.org/2018/credentials/v1'],
       id: "urn:vc:product:" + vcId,
       type: 'VerifiableCredential',
-      issuer: 'did:hedera:0.0.999', // replace with your platform DID
+      issuer: platformDid, // replace with your platform DID
       issuanceDate,
       credentialSubject: {
         id: twinUrn,
@@ -42,12 +43,13 @@ export function generateVcDocument(holderDid: string, twinUrn: string, location:
 
 
 export function generateRevokeVcDocument(vcId: string, twinUrn: string, revocationReason: string): Record<string, any> {
+  const platformDid = process.env.PLATFORM_DID;
   return {
     vcId: vcId,
     productUrn: twinUrn,
     revokedAt: new Date().toISOString(),
     type: 'VCRevocation',
     reason: revocationReason,
-    revokedBy: 'did:hedera:0.0.999', // platform or issuer DID
+    revokedBy: platformDid, // platform or issuer DID
   };
 }
