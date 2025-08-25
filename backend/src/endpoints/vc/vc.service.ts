@@ -16,13 +16,14 @@
 
 import { HttpException, HttpStatus, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { AccountInfoQuery, Client, Hbar, PrivateKey, TopicCreateTransaction, TopicInfoQuery, TopicMessageSubmitTransaction } from '@hashgraph/sdk';
-import { generateRevokeVcDocument, generateVcDocument } from './vc.template';
+import { generateRevokeVcDocument, generateVcBindingDocument, generateVcDocument } from './vc.template';
 import { MirrorNodeService } from './mirror-node.service';
 
 @Injectable()
 export class VcService {
     private readonly privateKey = process.env.HEDERA_PRIVATE_KEY!;
     private readonly topicId = process.env.VC_TOPIC_ID!; // HCS Topic ID
+    private readonly bindingTopicId = process.env.CONTRACT_BINDING_VC_TOPIC_ID!; // HCS Binding Topic ID
 
     constructor(@Inject('HEDERA_CLIENT') private readonly client: Client, private readonly mirrorNodeService: MirrorNodeService) { }
 
@@ -113,6 +114,74 @@ export class VcService {
                 twinUrn: twinUrn,
                 vcId: vcPayload.vcId,
                 topicId: this.topicId,
+                sequenceNumber,
+                vc: vcWithProof
+            };
+        } catch (error) {
+            console.error('❌ Failed to issue VC:', error);
+            throw new HttpException(
+                `Failed to issue VC: ${error.message || 'Unknown error'}`,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+
+    async issueVcBinding(producerDid: string, bindingUrn: string, location: string, status: string, privateKey: string, producerSubAccountId: string, dateOfExpiry: string, consumerDid: string, twinUrn: string): Promise<Record<string, any>> {
+        try {
+            const issuanceDate = new Date().toISOString();
+
+            const vcPayload = generateVcBindingDocument(producerDid, bindingUrn, location, status, producerSubAccountId, dateOfExpiry, consumerDid, twinUrn);
+            const vcWithProof = {
+                ...vcPayload,
+                proof: {
+                    type: 'Ed25519Signature2020',
+                    created: issuanceDate,
+                    proofPurpose: 'assertionMethod',
+                    verificationMethod: `${producerDid}#keys-1`
+                }
+            };
+
+            const info = await new AccountInfoQuery().setAccountId(producerSubAccountId).execute(this.client);
+            const expectedPublicKey = info.key.toString();
+            const key = PrivateKey.fromStringED25519(privateKey);
+            const derivedPublicKey = key.publicKey.toString();
+            
+            if (expectedPublicKey !== derivedPublicKey) {
+                throw new HttpException(
+                    'Private key seems to be incorrect: expected public key does not match derived public key',
+                    HttpStatus.BAD_REQUEST
+                );
+            }
+
+            console.log("✅ Private key matches the expected public key");
+
+            const message = Buffer.from(JSON.stringify(vcWithProof));
+            
+            const submitTx = new TopicMessageSubmitTransaction()
+                .setTopicId(this.bindingTopicId)
+                .setMessage(message)
+                .setMaxTransactionFee(new Hbar(2));
+
+            const freezeTransaction = (await submitTx).freezeWith(this.client);
+            const signedTransaction = freezeTransaction.sign(key);
+            const response = (await signedTransaction).execute(this.client);
+            const receipt = await (await response).getReceipt(this.client);
+            const sequenceNumber = receipt?.topicSequenceNumber?.toString();
+            if (!sequenceNumber) {
+                throw new HttpException(
+                    'VC issued but topic sequence number is missing',
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
+
+            return {
+                status: 201,
+                message: 'Verifiable Credential issued successfully for contract binding',
+                bindingUrn: bindingUrn,
+                twinUrn: twinUrn,
+                vcId: vcPayload.vcId,
+                topicId: this.bindingTopicId,
                 sequenceNumber,
                 vc: vcWithProof
             };
