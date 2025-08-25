@@ -53,3 +53,34 @@ export function generateRevokeVcDocument(vcId: string, twinUrn: string, revocati
     revokedBy: platformDid, // platform or issuer DID
   };
 }
+
+
+export function generateVcBindingDocument(producerDid: string, bindingUrn: string, location: string, status: string, producerSubAccountId: string, dateOfExpiry: string, consumerDid: string, twinUrn: string): Record<string, any> {
+  const vcId = bindingUrn.split(":")[2]; // Or use your own namespace/format
+
+  const issuanceDate = new Date().toISOString();
+  const platformDid = process.env.PLATFORM_DID;
+
+  return {
+    vcId: "urn:vc:binding:" + vcId,
+    bindingUrn: bindingUrn,
+    timestamp: issuanceDate,
+    vc: {
+      '@context': ['https://www.w3.org/2018/credentials/v1'],
+      id: "urn:vc:binding:" + vcId,
+      type: 'VerifiableCredential',
+      issuer: platformDid, // replace with your platform DID
+      issuanceDate,
+      credentialSubject: {
+        id: bindingUrn,
+        status: status,
+        location: location,
+        dataProducer: producerDid,
+        dataConsumer: consumerDid,
+        twinUrn: twinUrn,
+        dateOfExpiry: dateOfExpiry,
+        ownerHederaAccountId: producerSubAccountId, // Assuming holderDid is the Hedera account ID
+      }
+    }
+  };
+}
