@@ -12,9 +12,6 @@ class BindingEntry {
 
     @ApiProperty({ example: '01-01-2025' })
     dateOfExpiry: string;
-
-    @ApiProperty({ example: 'urn:ifric:laser-001', description: 'URN of the twin' })
-    twinUrn: string;
 }
 
 export class IssueVcBindingBatchDto {

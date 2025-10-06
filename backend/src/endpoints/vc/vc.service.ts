@@ -127,11 +127,11 @@ export class VcService {
     }
 
 
-    async issueVcBinding(producerDid: string, bindingUrn: string, location: string, status: string, privateKey: string, producerSubAccountId: string, dateOfExpiry: string, consumerDid: string, twinUrn: string): Promise<Record<string, any>> {
+    async issueVcBinding(producerDid: string, bindingUrn: string, location: string, status: string, privateKey: string, producerSubAccountId: string, dateOfExpiry: string, consumerDid: string): Promise<Record<string, any>> {
         try {
             const issuanceDate = new Date().toISOString();
 
-            const vcPayload = generateVcBindingDocument(producerDid, bindingUrn, location, status, producerSubAccountId, dateOfExpiry, consumerDid, twinUrn);
+            const vcPayload = generateVcBindingDocument(producerDid, bindingUrn, location, status, producerSubAccountId, dateOfExpiry, consumerDid);
             const vcWithProof = {
                 ...vcPayload,
                 proof: {
@@ -179,7 +179,6 @@ export class VcService {
                 status: 201,
                 message: 'Verifiable Credential issued successfully for contract binding',
                 bindingUrn: bindingUrn,
-                twinUrn: twinUrn,
                 vcId: vcPayload.vcId,
                 topicId: this.bindingTopicId,
                 sequenceNumber,

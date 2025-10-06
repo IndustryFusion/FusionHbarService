@@ -5,9 +5,10 @@ import * as crypto from 'crypto';
 @Injectable()
 export class MirrorNodeService {
     MIRROR_API_URL = process.env.MIRROR_API_URL || 'https://testnet.mirrornode.hedera.com/api/v1';
+    bindingTopicId = process.env.CONTRACT_BINDING_VC_TOPIC_ID;
 
     async getLatestVcById(topicId: string, vcId: string): Promise<any | null> {
-        const url = `${this.MIRROR_API_URL}/topics/${topicId}/messages?limit=100&order=desc`;
+        const url = `${this.MIRROR_API_URL}/topics/${topicId}/messages?limit=1000&order=desc`;
 
         const { data } = await axios.get(url);
         const messages = data.messages;
@@ -27,6 +28,29 @@ export class MirrorNodeService {
         }
 
         return null;
+    }
+
+    async getVcByBindingUrn(bindingUrn: string): Promise<any | null> {
+        const url = `${this.MIRROR_API_URL}/topics/${this.bindingTopicId}/messages?limit=1000&order=desc`;
+
+        const { data } = await axios.get(url);
+        const messages = data.messages;
+
+        for (const msg of messages) {
+            try {
+                const decoded = Buffer.from(msg.message, 'base64').toString('utf-8');
+                const parsed = JSON.parse(decoded);
+                const parsed2 = msg;
+
+                if (parsed2?.topic_id === this.bindingTopicId && parsed?.vc?.credentialSubject?.id === bindingUrn && parsed?.vc?.type === 'VerifiableCredential') {
+                    return true;
+                }
+            } catch {
+                continue;
+            }
+        }
+
+        return false;
     }
 
     computeVcHash(vcPayload: any): string {

@@ -10,9 +10,6 @@ export class IssueVcBindingResponseDto {
     @ApiProperty({ example: 'urn:ifric:laser-001', description: 'URN of the company/user' })
     bindingUrn: string;
 
-    @ApiProperty({ example: 'urn:ifric:laser-001', description: 'URN of the twin' })
-    twinUrn: string;
-
     @ApiProperty({ example: 'urn:vc:product:laser-001' })
     vcId: string;
 

@@ -10,9 +10,6 @@ class IssueVcBindingBatchResultDto {
   @ApiPropertyOptional({ example: 'urn:ifric:laser-001', description: 'URN of the binding (if success)' })
   bindingUrn?: string;
 
-  @ApiPropertyOptional({ example: 'urn:ifric:laser-001', description: 'URN of the twin (if success)' })
-  twinUrn?: string;
-
   @ApiPropertyOptional({ example: '0.0.45678', description: 'HCS binding topic ID (if success)' })
   bindingTopicId?: string;
 

@@ -40,10 +40,10 @@ export class VcController {
     @ApiResponse({ status: 201, description: 'VC binding issued successfully', type: IssueVcResponseDto })
     @ApiResponse({ status: 400, description: 'Missing required fields' })
     async issueVcBinding(@Body() body: IssueVcBindingDto) {
-        const { producerDid, bindingUrn, location, status, privateKey, producerSubAccountId, dateOfExpiry, consumerDid, twinUrn } = body;
-        if (!producerDid || !bindingUrn || !location || !status || !privateKey || !producerSubAccountId || !dateOfExpiry || !consumerDid || !twinUrn) {
+        const { producerDid, bindingUrn, location, status, privateKey, producerSubAccountId, dateOfExpiry, consumerDid } = body;
+        if (!producerDid || !bindingUrn || !location || !status || !privateKey || !producerSubAccountId || !dateOfExpiry || !consumerDid) {
             throw new HttpException(
-                'producerDid, bindingUrn, location, status, privateKey, producerSubAccountId, dateOfExpiry, consumerDid, and twinUrn are required fields',
+                'producerDid, bindingUrn, location, status, privateKey, producerSubAccountId, dateOfExpiry, and consumerDid are required fields',
                 HttpStatus.BAD_REQUEST,
             );
         }
@@ -55,8 +55,7 @@ export class VcController {
             privateKey,
             producerSubAccountId,
             dateOfExpiry,
-            consumerDid,
-            twinUrn
+            consumerDid
         );
     }
 
@@ -173,8 +172,7 @@ export class VcController {
                         privateKey,
                         producerSubAccountId,
                         binding.dateOfExpiry,
-                        binding.consumerDid,
-                        binding.twinUrn
+                        binding.consumerDid
                     );
                     return result;
                 } catch (err) {
@@ -255,6 +253,20 @@ export class VcController {
         }
         const messages = await this.mirrorNodeService.getLatestVcById(topicId, vcId);
         return { messages: messages };
+    }
+
+
+    @Get('check-binding-vc/:bindingUrn')
+    @ApiParam({ name: 'bindingUrn', type: String })
+    async checkBindingVc(@Param('bindingUrn') bindingUrn: string): Promise<{ exists: boolean }> {
+        if (!bindingUrn) {
+            throw new HttpException(
+                'Binding URN is a required parameter',
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+        const flag = await this.mirrorNodeService.getVcByBindingUrn(bindingUrn);
+        return { exists: flag };
     }
 
 }
