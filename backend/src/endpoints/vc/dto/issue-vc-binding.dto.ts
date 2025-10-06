@@ -24,7 +24,4 @@ export class IssueVcBindingDto {
 
   @ApiProperty({ example: '01-01-2025' })
   dateOfExpiry: string;
-
-  @ApiProperty({ example: 'active' })
-  twinUrn: string;
 }
