@@ -16,7 +16,7 @@
 
 import { HttpException, HttpStatus, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { AccountInfoQuery, Client, Hbar, PrivateKey, TopicCreateTransaction, TopicInfoQuery, TopicMessageSubmitTransaction } from '@hashgraph/sdk';
-import { generateRevokeVcDocument, generateVcBindingDocument, generateVcDocument } from './vc.template';
+import { generateRevokeVcDocument, generateVcBindingDocument, generateVcCrmDocument, generateVcDocument } from './vc.template';
 import { MirrorNodeService } from './mirror-node.service';
 
 @Injectable()
@@ -247,6 +247,73 @@ export class VcService {
             console.error('❌ Failed to revoke VC:', error);
             throw new HttpException(
                 `Failed to revoke VC: ${error.message || 'Unknown error'}`,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+
+    async issueVcCRM(holderDid: string, twinUrn: string, location: string, status: string, privateKey: string, subAccountId: string): Promise<Record<string, any>> {
+        try {
+            const issuanceDate = new Date().toISOString();
+
+            const vcPayload = generateVcCrmDocument(holderDid, twinUrn, location, status, subAccountId);
+            const vcWithProof = {
+                ...vcPayload,
+                proof: {
+                    type: 'Ed25519Signature2020',
+                    created: issuanceDate,
+                    proofPurpose: 'assertionMethod',
+                    verificationMethod: `${holderDid}#keys-1`
+                }
+            };
+
+            const info = await new AccountInfoQuery().setAccountId(subAccountId).execute(this.client);
+            const expectedPublicKey = info.key.toString();
+            const key = PrivateKey.fromStringED25519(privateKey);
+            const derivedPublicKey = key.publicKey.toString();
+            
+            if (expectedPublicKey !== derivedPublicKey) {
+                throw new HttpException(
+                    'Private key seems to be incorrect: expected public key does not match derived public key',
+                    HttpStatus.BAD_REQUEST
+                );
+            }
+
+            console.log("✅ Private key matches the expected public key");
+
+            const message = Buffer.from(JSON.stringify(vcWithProof));
+            
+            const submitTx = new TopicMessageSubmitTransaction()
+                .setTopicId(this.topicId)
+                .setMessage(message)
+                .setMaxTransactionFee(new Hbar(2));
+
+            const freezeTransaction = (await submitTx).freezeWith(this.client);
+            const signedTransaction = freezeTransaction.sign(key);
+            const response = (await signedTransaction).execute(this.client);
+            const receipt = await (await response).getReceipt(this.client);
+            const sequenceNumber = receipt?.topicSequenceNumber?.toString();
+            if (!sequenceNumber) {
+                throw new HttpException(
+                    'VC issued but topic sequence number is missing',
+                    HttpStatus.BAD_REQUEST,
+                );
+            }
+
+            return {
+                status: 201,
+                message: 'Verifiable Credential issued successfully',
+                twinUrn: twinUrn,
+                vcId: vcPayload.vcId,
+                topicId: this.topicId,
+                sequenceNumber,
+                vc: vcWithProof
+            };
+        } catch (error) {
+            console.error('❌ Failed to issue VC:', error);
+            throw new HttpException(
+                `Failed to issue VC: ${error.message || 'Unknown error'}`,
                 HttpStatus.INTERNAL_SERVER_ERROR,
             );
         }

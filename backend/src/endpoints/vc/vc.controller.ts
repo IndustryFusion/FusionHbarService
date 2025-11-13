@@ -269,4 +269,20 @@ export class VcController {
         return { exists: flag };
     }
 
+    @Post('issue-crm')
+    @ApiOperation({ summary: 'Issue a Verifiable Credential for CRM objects' })
+    @ApiBody({ type: IssueVcDto })
+    @ApiResponse({ status: 201, description: 'VC issued successfully', type: IssueVcResponseDto })
+    @ApiResponse({ status: 400, description: 'Missing required fields' })
+    async issueVcCRM(@Body() body: IssueVcDto) {
+        const { holderDid, twinUrn, privateKey, subAccountId } = body;
+        if (!holderDid || !twinUrn || !privateKey || !subAccountId) {
+            throw new HttpException(
+                'holderDid, twinUrn, privateKey, and subAccountId are required fields',
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+        return this.vcService.issueVcCRM(body.holderDid, body.twinUrn, body.location, body.status, body.privateKey, body.subAccountId);
+    }
+
 }
